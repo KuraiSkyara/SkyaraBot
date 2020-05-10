@@ -1,0 +1,10 @@
+__pycache__/
+old/
+addons/
+.project
+.DS_Store
+dToken.txt
+tToken.txt
+stream_users.txt
+Python37.lnk
+run_bot.lnk
