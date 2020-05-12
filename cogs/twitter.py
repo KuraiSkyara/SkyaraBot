@@ -5,28 +5,34 @@ from discord_webhook import DiscordWebhook
 
 #Twitter
 import tweepy
-import json
-from tweepy.streaming import StreamListener
+from tweepy import StreamListener
 from tweepy import OAuthHandler
 from tweepy import Stream
 
-#New command format
-#@commands.[method]
-#async def Method(self, [ctx], [other parameters])
+#Command format
+#async def Method(self, ctx, [other parameters])
 
 #Listens and reacts to user-specified accounts
 class skyListener(StreamListener):
     def __init__ (self,hook):
+        super().__init__()
         self.hook = hook
 
-    def on_data (self,data):
-        tweet = json.loads(data)
-        tweetURL = "https://twitter.com/%s/status/%s" % (tweet['user']['screen_name'], tweet['id'])
-        webhook = DiscordWebhook(url=self.hook, content=tweetURL)
-        response = webhook.execute()
-        print("Response: %s, Data: %s" % (response, tweetURL))
+    def on_status(self, status):
+        #Called when tweet data has been received
+        try:
+            tweetURL = "https://twitter.com/%s/status/%s" % (status.user.screen_name, status.id)
+            webhook = DiscordWebhook(url=self.hook, content=tweetURL)
+            response = webhook.execute()
+            print("Response: %s, Data: %s" % (response, tweetURL))
+
+        except Exception as e:
+            print("An error has occurred: %s" % (e))
+
+        return True
 
     def on_error(self,status):
+        #Called if there is an issue with tweet data
         webhook = DiscordWebhook(url=self.hook, content="Error %s; ")
         webhook.execute()
         return False
@@ -43,22 +49,23 @@ class TweetCog(commands.Cog):
 
         #Add users to stream listener
         if option == "-a":
-            if user != '0':
-                api = tweepy.API(self.auth)
-                try:
-                    user_to_add = api.get_user(user)
-                    with open('stream_users.txt', 'a') as fout:
-                        fout.write(str(user_to_add.id)+'\n')
+            if user == '0': await ctx.send("Please specify a user to add")
+            api = tweepy.API(self.auth)
+            try:
+                #Attempt to add the user by getting the user's ID from Twitter
+                user_to_add = api.get_user(user)
+                with open('stream_users.txt', 'a') as fout:
+                    fout.write(str(user_to_add.id)+'\n')
 
-                    await ctx.send("User %s added to Stream" % user_to_add.screen_name)
-                except Exception as e:
-                    print (e)
-                    await ctx.send("Failed to add the user")
-            else:
-                await ctx.send("Please specify a user to add")
+                await ctx.send("User **%s** added to Stream" % user_to_add.screen_name)
+            except Exception as e:
+                print("An error has occurred: %s" % (e))
+                await ctx.send("Failed to add the user")
+
 
         #Begin streaming tweets            
         elif option == "-s":
+            #Open a StreamListener to track tweets from specified users
             with open('stream_users.txt') as f:
                 users_to_stream = f.read().splitlines()
 
