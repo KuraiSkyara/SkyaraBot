@@ -49,7 +49,7 @@ class TweetCog(commands.Cog):
 
         #Add users to stream listener
         if option == "-a":
-            if user == '0': await ctx.send("Please specify a user to add")
+            if user == '0': return await ctx.send("Please specify a user to add")
             api = tweepy.API(self.auth)
             try:
                 #Attempt to add the user by getting the user's ID from Twitter
